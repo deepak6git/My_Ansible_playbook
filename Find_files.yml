@@ -1,0 +1,53 @@
+#=============================================================================
+#
+# FindFile
+#
+# 2021-09-30 1.0.0 deepak kumar das  <deepak.das@dxc.com>
+#  - Playbook creation
+#
+#=============================================================================
+# Parameters:
+# NODE - Target inventory node
+
+# ---
+# SLAM_TASKNAME: Find File
+# SLAM_FACT_SYSTEM: Linux
+# SLAM_Q: Play
+# SLAM_DESCRIPTION: Find files on target matching as per the pattern
+# SLAM_FF_TIMEFRAME:
+#   type: Text
+#   required: false
+#   ghost: Enter timeframe
+#   prompt: Enter timeframe
+# ---
+
+---
+- hosts: "{{ NODE }}"
+  
+  vars:
+    timeFrame: "{{ TIMEFRAME | default('30d', true) }}"
+
+  tasks:
+    - name: Find files older than x days
+      find:
+        paths: /var/log
+        patterns: '*.log'
+        age: "{{timeFrame}}"
+        #size: 100k
+        age_stamp: mtime
+        recurse: yes
+      register: output
+    
+    # - debug:
+        # msg: "{{output}}"
+
+    # - debug: var=item.path
+      # with_items: "{{ output.files }}"
+
+    - name: Archive the files
+      become: yes
+      archive:
+        path: "{{ item.path }}"
+        format: zip
+      with_items: "{{ output.files }}"
+
